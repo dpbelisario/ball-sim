@@ -7,7 +7,8 @@ zc = [1.3 5 7 3]/100; % felt surface height at corners A B C D (m above table)
 zBoard = @(x, y) zc(1)*(1-x/L).*(1-y/W) + zc(2)*(1-x/L).*(y/W) + zc(3)*(x/L).*(y/W) + zc(4)*(x/L).*(1-y/W);
 
 figure('Color', 'w'); hold on; grid on;
-daspect([1 1 1/zExag]); view(-35, 30);
+daspect([1 1 1/zExag]); view(-15, 35);
+set(gca, 'YDir', 'reverse');   % camera on the B-C side: A top-left, D top-right, like the real table
 xlabel('x (m), A -> D'); ylabel('y (m), A -> B'); zlabel('z (m)');
 
 % table, felt, board edges
