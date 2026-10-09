@@ -1,4 +1,4 @@
-% sweep.m — which launch (speed, angle) from corner B lands in each goal cup at corner A
+% sweep.m — which launch (speed, angle) from corner D lands in each goal cup at corner A
 % Frame: origin A (low corner), x along A->D, y along A->B. Units: m, s.
 % Runs in MATLAB or Octave. No toolboxes.
 
@@ -14,10 +14,10 @@ cupA_B = [0.15, 0.06];    % [center along y, opening width] on edge x=0 (A-B edg
 cupA_D = [0.15, 0.06];    % [center along x, opening width] on edge y=0 (A-D edge)
 % 18 cm from A to the cup's far side, 6 cm wide cup -> center at 15 cm
 
-%% Launcher at B
-P0 = [0.05, W - 0.05];    % exit point of the launcher, 5 cm in from corner B. Edit to match CAD
+%% Launcher at D
+P0 = [L - 0.05, 0.05];    % exit point of the launcher, 5 cm in from corner D. Edit to match CAD
 v_list = 0.2:0.02:2.5;    % exit speed (m/s)
-th_list = -10:0.5:60;     % angle (deg) from straight-toward-A (-y), positive = into board (+x)
+th_list = -10:0.5:60;     % angle (deg) from straight-toward-A (-x), positive = into board (+y)
 
 [V, TH] = meshgrid(v_list, th_list);
 [hit, exitPt] = simulate(P0, V(:), TH(:), ag, c_r, L, W);
@@ -43,9 +43,9 @@ end
 
 figure; hold on;
 plot(TH(inB), V(inB), 'r.', TH(inD), V(inD), 'b.');
-xlabel('launch angle from -y (deg)'); ylabel('exit speed (m/s)');
+xlabel('launch angle from -x, toward A (deg)'); ylabel('exit speed (m/s)');
 legend('cup on A-B edge', 'cup on A-D edge'); grid on;
-title(sprintf('Scoring launches from B  (c_r = %.2f)', c_r));
+title(sprintf('Scoring launches from D  (c_r = %.2f)', c_r));
 
 %% 3D board view: both setups, animated
 board3d

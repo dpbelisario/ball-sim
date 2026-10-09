@@ -3,7 +3,7 @@ function [hit, exitPt, path] = simulate(P0, v, thDeg, ag, c_r, L, W)
 n = numel(v);  dt = 1e-3;
 th = thDeg(:) * pi/180;
 p = repmat(P0, n, 1);
-u = [v(:).*sin(th), -v(:).*cos(th)];
+u = [-v(:).*cos(th), v(:).*sin(th)];   % angle 0 = straight along D->A (-x), + = into board (+y)
 live = true(n, 1);  path = P0;  hit = zeros(n, 1);  exitPt = nan(n, 2);
 for step = 1:20000                        % 20 s max
     u(live,:) = u(live,:) + ag*dt;
