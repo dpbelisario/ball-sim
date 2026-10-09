@@ -22,8 +22,8 @@ end
 text(0, 0, zc(1)+0.03, 'A'); text(0, W, zc(2)+0.03, 'B'); text(L, W, zc(3)+0.03, 'C'); text(L, 0, zc(4)+0.03, 'D');
 
 % cups: U shape, opening on the board edge, 6 cm wide, 7.5 cm deep
-% ponytail: cup heights eyeballed from the photo (one short, one tall). Rail between them not drawn
-cupH = [0.06 0.12];  cups = {cupA_B, cupA_D};  depth = 0.075;  half = 0.03;
+% both cups identical; height is cosmetic (ball scoring is decided at the felt edge). Rail between them not drawn
+cupH = [0.10 0.10];  cups = {cupA_B, cupA_D};  depth = 0.075;  half = 0.03;
 t = linspace(-pi/2, pi/2, 20);
 for c = 1:2
     out = [-(depth-half)*ones(1,2), -(depth-half) - half*cos(t), -(depth-half)*ones(1,2)];  % outward from edge
