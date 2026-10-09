@@ -17,8 +17,8 @@ cupA_D = [0.15, 0.06];    % [center along x, opening width] on edge y=0 (A-D edg
 
 %% Launcher at D
 P0 = [L - 0.05, 0.05];    % exit point of the launcher, 5 cm in from corner D. Edit to match CAD
-h_list = 0.02:0.0025:0.15; % ramp drop height (m): 2-15 cm
-th_list = 0:1:90;         % angle (deg): 0 = along D->A edge, 90 = straight into the board toward C
+h_list = 0.02:0.001:0.15;  % ramp drop height (m): 2-15 cm, 1 mm steps (scoring band is thin in height)
+th_list = 30:0.5:60;      % angle (deg): 0 = along D->A edge, 90 = into board toward C. 45 = diagonal, like the test shot that worked
 
 [H, TH] = meshgrid(h_list, th_list);
 V = eta * sqrt(10/7 * g * H);              % rolling ball off a ramp of drop H
@@ -38,15 +38,18 @@ fprintf('Check (7.5 cm drop, 40 deg): max %.0f cm into board, ends at x=%.0f y=%
 %% Report + plot
 fprintf('Cup on A-B edge: %d hits\n', nnz(inB));
 fprintf('Cup on A-D edge: %d hits\n', nnz(inD));
-% Most forgiving setting per cup = centre of the biggest scoring blob (tolerates launcher scatter)
+% Pick per cup: aim at th_aim, ramp drop = middle of the scoring height window (max margin either way)
+th_aim = 45;   % deg, diagonal like the test shot that worked. Change to explore other aims
 best = zeros(2, 3);  masks = {inB, inD};      % [v, angle, h]
+row = find(abs(th_list - th_aim) < 1e-9);
 for c = 1:2
     m = reshape(masks{c}, size(H));
-    score = conv2(double(m), ones(7), 'same');  % 7x7 = +-0.75 cm drop, +-3 deg
-    score(~m) = 0;
-    [~, k] = max(score(:));
-    best(c,:) = [V(k), TH(k), H(k)];
-    fprintf('Best for cup %d: ramp drop = %.1f cm (v = %.2f m/s), angle = %.0f deg\n', c, 100*H(k), V(k), TH(k));
+    hs = H(row, m(row,:));
+    if isempty(hs), fprintf('Cup %d: no scoring ramp drop at %g deg\n', c, th_aim); continue; end
+    h = (min(hs) + max(hs)) / 2;
+    best(c,:) = [eta*sqrt(10/7*g*h), th_aim, h];
+    fprintf('Cup %d @ %g deg: ramp drop %.1f-%.1f cm scores -> use %.1f cm (v = %.2f m/s)\n', ...
+            c, th_aim, 100*min(hs), 100*max(hs), 100*h, best(c,1));
 end
 
 figure; hold on;
