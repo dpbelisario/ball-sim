@@ -60,7 +60,7 @@ end
 yt = get(gca, 'YTick');  set(gca, 'YTickLabel', arrayfun(@(v) sprintf('%.1f', -v), yt, 'UniformOutput', false));  % show distances as positive
 
 for c = 1:2
-    title(sprintf('Setup %d: %s  (v = %.2f m/s, angle = %.1f deg, z x%d)', c, names{c}, best(c,1), best(c,2), zExag));
+    title(sprintf('Setup %d: %s  (ramp drop %.1f cm, angle %.0f deg, z x%d)', c, names{c}, 100*best(c,3), best(c,2), zExag));
     for i = 1:size(P{c}, 1)                             % 10 ms per frame = real time
         set(ball, 'XData', P{c}(i,1) + r*sxp, 'YData', -P{c}(i,2) + r*syp, 'ZData', P{c}(i,3) + r*szp/zExag);  % /zExag keeps it round
         drawnow; pause(0.01);
