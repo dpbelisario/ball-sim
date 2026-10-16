@@ -1,16 +1,20 @@
-% sweep.m — which launch (ramp drop, angle) from corner D lands in each goal cup at corner A
-% Frame: origin A (low corner), x along A->D, y along A->B. Units: m, s.
-% Runs in MATLAB or Octave. No toolboxes.
+% sweep.m — fixed ramp (one exit speed), vary only the launch angle from corner D:
+% which angles land in each goal cup at corner A. Then opens the 3D board with an angle slider.
+% Frame: origin A (low corner), x along A->D, y along A->B. Units: m, s. Runs in MATLAB or Octave, no toolboxes.
 
 %% Board
 L = 1.145;  W = 0.805;  g = 9.81;
-sx = mean([3-1.3, 7-5]) / 114.5;          % rise along x (A->D)
+sx = mean([3-1.3, 7-5]) / 114.5;          % rise along x (A->D), from corner heights A 1.3, B 5, C 7, D 3 cm
 sy = mean([5-1.3, 7-3]) / 80.5;           % rise along y (A->B)
-ag = -(5/7)*g*[sx, sy];                   % rolling solid sphere, downhill = toward A
-% Calibrated to the test shot that worked (photo): blue ramp ~6 cm drop, aimed ~45 deg from D, ball arced to A.
-% c_r ~0.35-0.5 is typical for a golf ball on green/felt-like surfaces; eta 0.9 = small loss at the ramp foot.
-c_r = 0.35; % ponytail: estimated felt drag (m/s^2). Refit from tracked video (Section 7)
-eta = 0.9;  % ponytail: ramp speed loss factor (1 = perfect ramp)
+ag = -(5/7)*g*[sx, sy];                   % rolling solid sphere, downhill = toward A (direction from the corners)
+
+%% Measured from the overhead roll video (PXL_20261016_063356301), tape-measure scale:
+% felt drag 0.21-0.22, slope pull 0.30-0.32 m/s^2 (corners predict 0.35: board is flatter mid-board),
+% exit speed off the 5 cm blue ramp ~0.67 m/s (ideal 0.84 -> ramp keeps ~80%)
+c_r    = 0.22;  % ponytail: felt drag (m/s^2), +-0.03. More rolls tighten it
+G_meas = 0.31;  % ponytail: measured slope pull (m/s^2); replaces the corner-based 0.35, same direction
+v0     = 0.67;  % ponytail: ramp exit speed (m/s), +-0.05. Fixed ramp = this never changes. Re-measure if the ramp changes
+ag = ag * G_meas / norm(ag);
 
 %% Goals (cups sit just off the felt edge, beside corner A)
 cupA_B = [0.15, 0.06];    % [center along y, opening width] on edge x=0 (A-B edge)
@@ -19,75 +23,64 @@ cupA_D = [0.15, 0.06];    % [center along x, opening width] on edge y=0 (A-D edg
 
 %% Launcher at D
 P0 = [L - 0.05, 0.05];    % exit point of the launcher, 5 cm in from corner D. Edit to match CAD
-h_list = 0.02:0.001:0.15;  % ramp drop height (m): 2-15 cm, 1 mm steps (scoring band is thin in height)
-th_list = 0:0.5:90;       % angle (deg): 0 = along D->A edge, 90 = into board toward C. 45 = diagonal, like the test shot that worked
+th_list = 0:0.1:90;       % angle (deg): 0 = along D->A edge toward A, 90 = straight into the board
 
-[H, TH] = meshgrid(h_list, th_list);
-V = eta * sqrt(10/7 * g * H);              % rolling ball off a ramp of drop H
-[hit, exitPt] = simulate(P0, V(:), TH(:), ag, c_r, L, W);
-inB = hit == 1 & abs(exitPt(:,2) - cupA_B(1)) <= cupA_B(2)/2;
-inD = hit == 2 & abs(exitPt(:,1) - cupA_D(1)) <= cupA_D(2)/2;
+S = struct('L', L, 'W', W, 'g', g, 'ag', ag, 'c_r', c_r, 'v0', v0, 'P0', P0, 'cupA_B', cupA_B, 'cupA_D', cupA_D);
+[win, hit, exitPt] = scoring_windows(S, th_list);
 
 %% Self-check: ball released at rest with no drag must roll toward A
 [~, e] = simulate([0.5 0.5], 0, 0, ag, 0, L, W);
 assert(e(1) < 0.5 && e(2) < 0.5, 'gravity sign wrong / 重力の向きが逆');
 
-%% Observed-shot check: the photo's ramp (~6 cm drop, 45 deg) should arc out and land at A
-[~, e, p] = simulate(P0, eta*sqrt(10/7*g*0.06), 45, ag, c_r, L, W);
-fprintf('Check (6 cm drop, 45 deg): max %.0f cm into board, ends at x=%.0f y=%.0f cm. Tune c_r/eta to match reality\n', ...
-        100*max(p(:,2)), 100*e(1), 100*e(2));
-fprintf('確認（落差6 cm・45°）：盤面に最大 %.0f cm 進入、終点 x=%.0f y=%.0f cm。実測に合うよう c_r/eta を調整\n', ...
-        100*max(p(:,2)), 100*e(1), 100*e(2));
-
-%% Report + plot
-fprintf('Cup on A-B edge: %d hits / A-B辺のカップ：%d 件成功\n', nnz(inB), nnz(inB));
-fprintf('Cup on A-D edge: %d hits / A-D辺のカップ：%d 件成功\n', nnz(inD), nnz(inD));
-% Pick per cup: aim at th_aim, ramp drop = middle of the scoring height window (max margin either way)
-th_aim = 45;   % deg, diagonal like the test shot that worked. Change to explore other aims
-best = zeros(2, 3);  masks = {inB, inD};      % [v, angle, h]
-row = find(abs(th_list - th_aim) < 1e-9);
+%% Report: aim windows per cup / 各カップの成功角度範囲
+names = {'A-B edge cup', 'A-D edge cup'};  namesJ = {'A-B辺のカップ', 'A-D辺のカップ'};
+fprintf('\nExit speed %.2f m/s, felt drag %.2f, slope pull %.2f m/s^2\n', v0, c_r, G_meas);
+fprintf('出口速度 %.2f m/s、フェルト抵抗 %.2f、傾斜の加速度 %.2f m/s^2\n\n', v0, c_r, G_meas);
+best = nan(2, 2);  fan = {zeros(0, 2), zeros(0, 2)};      % [v, angle]
 for c = 1:2
-    m = reshape(masks{c}, size(H));
-    hs = H(row, m(row,:));
-    if isempty(hs), fprintf('Cup %d: no scoring ramp drop at %g deg / カップ%d：%g°では入るランプ落差なし\n', c, th_aim, c, th_aim); continue; end
-    h = (min(hs) + max(hs)) / 2;
-    best(c,:) = [eta*sqrt(10/7*g*h), th_aim, h];
-    fprintf('Cup %d @ %g deg: ramp drop %.1f-%.1f cm scores -> use %.1f cm (v = %.2f m/s)\n', ...
-            c, th_aim, 100*min(hs), 100*max(hs), 100*h, best(c,1));
-    fprintf('  カップ%d（%g°）：ランプ落差 %.1f～%.1f cm で成功 → %.1f cm を使用（v = %.2f m/s）\n', ...
-            c, th_aim, 100*min(hs), 100*max(hs), 100*h, best(c,1));
-end
-
-% Every angle: which ramp drop scores. Pick whatever angle your ramp/launcher ends up at
-th_show = 10:5:80;
-fan = {zeros(0, 3), zeros(0, 3)};            % per cup: [v, angle, h] of each scoring angle, drawn faint in board3d
-fprintf('\n angle | A-B cup drop (cm) | A-D cup drop (cm)\n');
-fprintf(' 角度  | A-Bカップ落差 (cm) | A-Dカップ落差 (cm)\n');
-for th = th_show
-    r = find(abs(th_list - th) < 1e-9);
-    cellTxt = {'      --       ', '      --       '};
-    for c = 1:2
-        m = reshape(masks{c}, size(H));
-        hs = H(r, m(r,:));
-        if isempty(hs), continue; end
-        h = (min(hs) + max(hs)) / 2;
-        fan{c}(end+1,:) = [eta*sqrt(10/7*g*h), th, h];
-        cellTxt{c} = sprintf('%4.1f (%.1f-%.1f)', 100*h, 100*min(hs), 100*max(hs));
+    w = win{c};
+    if isempty(w)
+        fprintf('%s: NO angle scores from D at this exit speed / %s：この出口速度ではDからどの角度でも入らない\n', names{c}, namesJ{c});
+        continue
     end
-    fprintf('  %3d  |  %s  |  %s\n', th, cellTxt{1}, cellTxt{2});
+    for j = 1:size(w, 1)
+        fprintf('%s: %.1f° to %.1f°  -> aim %.1f° (±%.1f°)\n', names{c}, w(j,1), w(j,2), mean(w(j,:)), diff(w(j,:))/2);
+        fprintf('  %s：%.1f°～%.1f° → 狙い %.1f°（±%.1f°）\n', namesJ{c}, w(j,1), w(j,2), mean(w(j,:)), diff(w(j,:))/2);
+        fan{c}(end+1,:) = [v0, mean(w(j,:))];
+    end
+    [~, k] = max(diff(w, 1, 2));                           % widest window = most forgiving aim
+    best(c,:) = [v0, mean(w(k,:))];
 end
-fprintf('(use = middle of the scoring window; window in brackets)\n');
-fprintf('（使用値＝成功範囲の中央、括弧内は成功範囲）\n\n');
 
-figure; hold on;
+%% How much the aim moves if the measured numbers are a bit off / 測定誤差で狙い角度がどれだけ動くか
+fprintf('\nSensitivity (aim angle of each window) / 感度（各範囲の狙い角度）:\n');
+cases = {'measured / 測定値', c_r, v0; 'drag -0.03', c_r-0.03, v0; 'drag +0.03', c_r+0.03, v0; ...
+         'speed -0.05', c_r, v0-0.05; 'speed +0.05', c_r, v0+0.05};
+for i = 1:size(cases, 1)
+    S2 = S;  S2.c_r = cases{i,2};  S2.v0 = cases{i,3};
+    w2 = scoring_windows(S2, th_list);
+    txt = cell(1, 2);
+    for c = 1:2
+        if isempty(w2{c}), txt{c} = 'none / なし'; else, txt{c} = sprintf('%.1f° ', mean(w2{c}, 2)); end
+    end
+    fprintf('  %-18s  A-B cup: %-16s  A-D cup: %s\n', cases{i,1}, txt{1}, txt{2});
+end
+fprintf('\n');
+
+%% Aim chart: where the ball leaves the board for every angle / 角度ごとの落下位置
+along = nan(size(th_list(:)));
+along(hit == 1) = exitPt(hit == 1, 2);  along(hit == 2) = exitPt(hit == 2, 1);
+figure; hold on; grid on;
 try, theme(gcf, 'light'); end   % readable text in MATLAB dark mode
-plot(TH(inB), 100*H(inB), 'r.', TH(inD), 100*H(inD), 'b.');
+hf = fill([0 90 90 0], 100*(cupA_B(1) + [-1 -1 1 1]*cupA_B(2)/2), [0.85 1 0.85], 'EdgeColor', 'none');
+a1 = along;  a1(hit ~= 1) = NaN;  a2 = along;  a2(hit ~= 2) = NaN;   % NaN gaps keep both series (and the legend) even if one is empty
+h1 = plot(th_list, 100*a1, 'r.');  h2 = plot(th_list, 100*a2, 'b.');
 xlabel({'launch angle (deg): 0 = along D->A edge, 90 = into board', '発射角度（度）：0 = D→A辺に沿う、90 = 盤面の内側へ'});
-ylabel({'ramp drop (cm)', 'ランプ落差 (cm)'});
-legend('cup on A-B edge / A-B辺のカップ', 'cup on A-D edge / A-D辺のカップ'); grid on;
-title({sprintf('Scoring launches from D  (c_r = %.2f, eta = %.2f)', c_r, eta), 'Dからの成功する発射条件'});
+ylabel({'where it leaves the board: distance from A (cm)', '盤面から落ちる位置：Aからの距離 (cm)'});
+legend([hf h1 h2], 'cup opening (12-18 cm) / カップの開口部', 'leaves by A-B edge / A-B辺から落下', 'leaves by A-D edge / A-D辺から落下');
+title({sprintf('Aim chart from D  (v0 = %.2f m/s, drag = %.2f)', v0, c_r), 'Dからの狙い角度チャート：緑の帯に入れば成功'});
+xlim([0 90]); ylim([0 100]);
 
-%% 3D board view: both setups animated, then sliders on the same window turn the ramp live
-% 3D表示：2つの設定をアニメーション後、同じウィンドウのスライダーでランプを操作
-S = struct('L', L, 'W', W, 'g', g, 'ag', ag, 'c_r', c_r, 'eta', eta, 'P0', P0, 'cupA_B', cupA_B, 'cupA_D', cupA_D);
+%% 3D board with the angle slider / 3D表示と角度スライダー
+S.win = win;
 board3d

@@ -59,6 +59,7 @@ for c = 1:2
     end
 end
 for c = 1:2
+    if isnan(best(c,2)), continue; end                 % no scoring angle for this cup
     [~, ~, p] = simulate(P0, best(c,1), best(c,2), ag, c_r, L, W);
     z = zBoard(min(max(p(:,1), 0), L), min(max(p(:,2), 0), W)) + r;
     vel = (p(end,:) - p(end-1,:)) / 0.01;               % path is sampled every 10 ms
@@ -73,6 +74,6 @@ end
 
 yt = get(gca, 'YTick');  set(gca, 'YTickLabel', arrayfun(@(v) sprintf('%.1f', -v), yt, 'UniformOutput', false));  % show distances as positive
 
-% controls: sliders (ramp angle 0-90 deg, drop 2-15 cm) + Play / Stop / Best buttons, all on this figure
+% controls: angle slider (0-90 deg) + Play / Stop / Aim buttons, all on this figure
 S.zc = zc;  S.r = r;  S.zExag = zExag;  S.best = best;
 ramp_slider(gcf, S);

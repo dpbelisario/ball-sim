@@ -7,10 +7,11 @@ toolboxes, no absolute paths, so the same files run on local MATLAB and on MATLA
 | File | What it does |
 | --- | --- |
 | `run_sim.m` | Entry point. Adds its folder to the path, `cd`s there, runs `sweep`. Run this. |
-| `sweep.m` | Board geometry, launcher, parameter sweep, scoring plot. Calls `board3d` at the end. |
+| `sweep.m` | Measured physics + fixed ramp exit speed; sweeps only the launch angle from D, prints each cup's scoring angle windows and a sensitivity check, draws the aim chart. Calls `board3d`. |
 | `simulate.m` | Vectorised rolling-ball integrator (gravity on the tilt + felt drag). |
 | `board3d.m` | Animated 3D view of the board, cups and the two best shots. |
-| `ramp_slider.m` | Controls under the 3D board: sliders (ramp angle 0-90 deg, drop 2-15 cm) redraw path, ball and IN/MISS live; buttons Play, Stop, Best A-B, Best A-D. Called by `board3d`; fresh board: `close all; board3d`. |
+| `ramp_slider.m` | Controls under the 3D board: one angle slider (0-90 deg, 0.1 deg arrows) with live path, ball and IN/MISS; Play, Stop, Aim A-B, Aim A-D buttons; scoring windows listed. Called by `board3d`; fresh board: `close all; board3d`. |
+| `scoring_windows.m` | Simulates every angle at the fixed exit speed and returns the angle windows that land in each cup. |
 | `gitsync.m` | Optional helper: `gitsync` pulls, `gitsync('message')` commits and pushes. |
 
 ## Run it
