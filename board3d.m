@@ -76,11 +76,11 @@ yt = get(gca, 'YTick');  set(gca, 'YTickLabel', arrayfun(@(v) sprintf('%.1f', -v
 for c = 1:2
     title({sprintf('Setup %d: %s  (ramp drop %.1f cm, angle %.0f deg, z x%d)', c, names{c}, 100*best(c,3), best(c,2), zExag), ...
            sprintf('設定%d：%s（ランプ落差 %.1f cm、角度 %.0f°、高さ%d倍表示）', c, namesJ{c}, 100*best(c,3), best(c,2), zExag)});
-    for i = 1:size(P{c}, 1)                             % 10 ms per frame = real time
+    for i = [1:5:size(P{c}, 1), size(P{c}, 1)]          % every 5th point = 50 ms frames, still real time (MATLAB Online redraws are slow)
         set(ball, 'XData', P{c}(i,1) + r*sxp, 'YData', -P{c}(i,2) + r*syp, 'ZData', P{c}(i,3) + r*szp/zExag);  % /zExag keeps it round
-        drawnow; pause(0.01);
+        drawnow; pause(0.05);
     end
-    pause(1);
+    pause(0.5);
 end
 
 % sliders: turn the ramp 0-90 deg and change its drop; live path + ball redraw on this figure
