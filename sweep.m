@@ -13,16 +13,16 @@ ag = -(5/7)*g*[sx, sy];                   % rolling solid sphere, downhill = tow
 % exit speed off the 5 cm blue ramp ~0.67 m/s (ideal 0.84 -> ramp keeps ~80%)
 c_r    = 0.22;  % ponytail: felt drag (m/s^2), +-0.03. More rolls tighten it
 G_meas = 0.31;  % ponytail: measured slope pull (m/s^2); replaces the corner-based 0.35, same direction
-% Ramp exit speed from physics (5 x 11.4 cm triangle ramp, 4 cm rail gap, 0.9 cm rails, golf ball r = 21.35 mm):
-%  - ball fits between the rails: resting on the floor its half-width at rail height is 17.4 mm < 20 mm gap/2,
+% Ramp exit speed from physics (5 x 11.4 cm triangle ramp, 4 cm rail gap, 1 cm rails, golf ball r = 21.35 mm):
+%  - ball fits between the rails: resting on the floor its half-width at rail height is 18.1 mm < 20 mm gap/2,
 %    so it rolls on the channel floor with its full radius (rails only guide) -> no extra spin penalty
 %  - rolling without slipping, no losses: v = sqrt(10/7 g h)                       = 0.84 m/s
 %  - sharp ramp -> felt corner (23.7 deg) costs: v' = v (5 cos(theta) + 2) / 7     -> 0.79 m/s
 %  (video measured 0.67 +-0.05; real shots reaching the A-B cup need >= 0.73, consistent with ~0.79)
-r_ball = 0.02135;  h_ramp = 0.05;  len_ramp = 0.114;  gap = 0.04;  rail = 0.009;  % h_ramp = slope surface at the top (rails not included)
+r_ball = 0.02135;  h_ramp = 0.05;  len_ramp = 0.114;  gap = 0.04;  rail = 0.01;  % h_ramp = slope surface at the top (rails not included)
 assert(sqrt(r_ball^2 - (r_ball - rail)^2) < gap/2, 'ball rides on the rails, not the floor: use rolling radius sqrt(r^2-(gap/2)^2)');
 th_ramp = atan(h_ramp / len_ramp);
-drop = h_ramp + r_ball*(1/cos(th_ramp) - 1);              % ball CENTRE drop: on the slope it sits r/cos(theta) above the surface
+drop = h_ramp - r_ball*(1 - cos(th_ramp));               % ball CENTRE drop: on the slope the centre sits r*cos(theta) above the contact point
 v0 = sqrt(10/7 * g * drop) * (5*cos(th_ramp) + 2) / 7;   % ponytail: ideal physics; a filmed release would confirm it
 ag = ag * G_meas / norm(ag);
 
