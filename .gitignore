@@ -1,0 +1,13 @@
+# MATLAB
+*.asv
+*.m~
+*.autosave
+*.mex*
+slprj/
+codegen/
+resources/project/
+*.prj.bak
+.run-*.log
+# OS
+.DS_Store
+Thumbs.db

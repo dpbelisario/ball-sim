@@ -1,0 +1,8 @@
+# Keep line endings consistent between Windows (local MATLAB) and Linux (MATLAB Online)
+* text=auto
+*.m   text
+*.md  text
+*.mat binary
+*.fig binary
+*.png binary
+*.jpg binary
