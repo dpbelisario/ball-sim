@@ -9,6 +9,7 @@ zc = [1.3 5 7 3]/100; % felt surface height at corners A B C D (m above table)
 zBoard = @(x, y) zc(1)*(1-x/L).*(1-y/W) + zc(2)*(1-x/L).*(y/W) + zc(3)*(x/L).*(y/W) + zc(4)*(x/L).*(1-y/W);
 
 figure('Color', 'w'); hold on; grid on;
+try, theme(gcf, 'light'); end   % MATLAB dark mode greys out all text; force light (no-op on older MATLAB/Octave)
 daspect([1 1 1/zExag]); view(-10, 50);
 xlabel({'x (m), A -> D', 'x (m)、A→D'}); ylabel({'distance from A-D edge (m)', 'A-D辺からの距離 (m)'}); zlabel({'z (m)', '高さ (m)'});
 
@@ -22,7 +23,12 @@ for k = 1:4  % side skirts down to the table
     fill3([xs fliplr(xs)], -[ys fliplr(ys)], [zBoard(xs, ys) 0 0], [0.6 0.6 0.6]);
 end
 lbl = {'A', 'B', 'C', 'D'};  cx4 = [0 0 L L];  cy4 = [0 W W 0];
-for k = 1:4, text(cx4(k), -cy4(k), zc(k) + 0.04, lbl{k}, 'FontWeight', 'bold', 'FontSize', 14); end
+off = 0.07;                                      % labels sit just outside each corner, boxed so they read on any background
+for k = 1:4
+    text(cx4(k) + off*sign(cx4(k) - L/2), -(cy4(k) + off*sign(cy4(k) - W/2)), zc(k) + 0.05, lbl{k}, ...
+         'FontWeight', 'bold', 'FontSize', 18, 'Color', 'k', 'BackgroundColor', [1 1 0.75], 'EdgeColor', 'k', ...
+         'HorizontalAlignment', 'center');
+end
 
 % cups: U shape, opening on the board edge, 6 cm wide, 7.5 cm deep
 % both cups identical; height is cosmetic (ball scoring is decided at the felt edge). Rail between them not drawn

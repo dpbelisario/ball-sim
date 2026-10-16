@@ -80,6 +80,7 @@ fprintf('(use = middle of the scoring window; window in brackets)\n');
 fprintf('（使用値＝成功範囲の中央、括弧内は成功範囲）\n\n');
 
 figure; hold on;
+try, theme(gcf, 'light'); end   % readable text in MATLAB dark mode
 plot(TH(inB), 100*H(inB), 'r.', TH(inD), 100*H(inD), 'b.');
 xlabel({'launch angle (deg): 0 = along D->A edge, 90 = into board', '発射角度（度）：0 = D→A辺に沿う、90 = 盤面の内側へ'});
 ylabel({'ramp drop (cm)', 'ランプ落差 (cm)'});
