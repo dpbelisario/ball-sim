@@ -7,8 +7,10 @@ L = 1.145;  W = 0.805;  g = 9.81;
 sx = mean([3-1.3, 7-5]) / 114.5;          % rise along x (A->D)
 sy = mean([5-1.3, 7-3]) / 80.5;           % rise along y (A->B)
 ag = -(5/7)*g*[sx, sy];                   % rolling solid sphere, downhill = toward A
-c_r = 0.2;  % ponytail: GUESS (m/s^2 felt drag). Tune with the 'observed shot' check below, later fit from video
-eta = 0.85; % ponytail: ramp losses (1 = perfect ramp). Tune together with c_r
+% Calibrated to the test shot that worked (photo): blue ramp ~6 cm drop, aimed ~45 deg from D, ball arced to A.
+% c_r ~0.35-0.5 is typical for a golf ball on green/felt-like surfaces; eta 0.9 = small loss at the ramp foot.
+c_r = 0.35; % ponytail: estimated felt drag (m/s^2). Refit from tracked video (Section 7)
+eta = 0.9;  % ponytail: ramp speed loss factor (1 = perfect ramp)
 
 %% Goals (cups sit just off the felt edge, beside corner A)
 cupA_B = [0.15, 0.06];    % [center along y, opening width] on edge x=0 (A-B edge)
@@ -30,9 +32,9 @@ inD = hit == 2 & abs(exitPt(:,1) - cupA_D(1)) <= cupA_D(2)/2;
 [~, e] = simulate([0.5 0.5], 0, 0, ag, 0, L, W);
 assert(e(1) < 0.5 && e(2) < 0.5, 'gravity sign wrong');
 
-%% Observed-shot check: real test was ~5-10 cm ramp, ball went ~55 cm into the board then curved to A
-[~, e, p] = simulate(P0, eta*sqrt(10/7*g*0.075), 40, ag, c_r, L, W);
-fprintf('Check (7.5 cm drop, 40 deg): max %.0f cm into board, ends at x=%.0f y=%.0f cm. Tune c_r/eta to match reality\n', ...
+%% Observed-shot check: the photo's ramp (~6 cm drop, 45 deg) should arc out and land at A
+[~, e, p] = simulate(P0, eta*sqrt(10/7*g*0.06), 45, ag, c_r, L, W);
+fprintf('Check (6 cm drop, 45 deg): max %.0f cm into board, ends at x=%.0f y=%.0f cm. Tune c_r/eta to match reality\n', ...
         100*max(p(:,2)), 100*e(1), 100*e(2));
 
 %% Report + plot
