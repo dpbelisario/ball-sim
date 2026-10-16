@@ -10,7 +10,7 @@ zBoard = @(x, y) zc(1)*(1-x/L).*(1-y/W) + zc(2)*(1-x/L).*(y/W) + zc(3)*(x/L).*(y
 
 figure('Color', 'w'); hold on; grid on;
 daspect([1 1 1/zExag]); view(-10, 50);
-xlabel('x (m), A -> D'); ylabel('distance from A-D edge (m)'); zlabel('z (m)');
+xlabel({'x (m), A -> D', 'x (m)、A→D'}); ylabel({'distance from A-D edge (m)', 'A-D辺からの距離 (m)'}); zlabel({'z (m)', '高さ (m)'});
 
 % table, felt, board edges
 surf([-0.2 L+0.1; -0.2 L+0.1], -[-0.2 -0.2; W+0.1 W+0.1], zeros(2), 'FaceColor', [0.93 0.85 0.7], 'EdgeColor', 'none');
@@ -42,8 +42,15 @@ plot3(P0(1), -P0(2), zBoard(P0(1), P0(2)) + 0.01, 'bs', 'MarkerSize', 12, 'Marke
 % paths: roll on felt, then fall off the edge into the cup
 [sxp, syp, szp] = sphere(16);
 ball = surf(r*sxp, r*syp, r*szp, 'FaceColor', [1 0.5 0], 'EdgeColor', 'none');
-cols = 'rb';  names = {'cup on A-B edge', 'cup on A-D edge'};
+cols = 'rb';  names = {'cup on A-B edge', 'cup on A-D edge'};  namesJ = {'A-B辺のカップ', 'A-D辺のカップ'};
 P = cell(1, 2);
+fanCol = {[1 0.7 0.7], [0.7 0.7 1]};          % faint: every scoring angle from the sweep table
+for c = 1:2
+    for j = 1:size(fan{c}, 1)
+        [~, ~, p] = simulate(P0, fan{c}(j,1), fan{c}(j,2), ag, c_r, L, W);
+        plot3(p(:,1), -p(:,2), zBoard(min(max(p(:,1), 0), L), min(max(p(:,2), 0), W)) + r, '-', 'Color', fanCol{c});
+    end
+end
 for c = 1:2
     [~, ~, p] = simulate(P0, best(c,1), best(c,2), ag, c_r, L, W);
     z = zBoard(min(max(p(:,1), 0), L), min(max(p(:,2), 0), W)) + r;
@@ -60,7 +67,8 @@ end
 yt = get(gca, 'YTick');  set(gca, 'YTickLabel', arrayfun(@(v) sprintf('%.1f', -v), yt, 'UniformOutput', false));  % show distances as positive
 
 for c = 1:2
-    title(sprintf('Setup %d: %s  (ramp drop %.1f cm, angle %.0f deg, z x%d)', c, names{c}, 100*best(c,3), best(c,2), zExag));
+    title({sprintf('Setup %d: %s  (ramp drop %.1f cm, angle %.0f deg, z x%d)', c, names{c}, 100*best(c,3), best(c,2), zExag), ...
+           sprintf('設定%d：%s（ランプ落差 %.1f cm、角度 %.0f°、高さ%d倍表示）', c, namesJ{c}, 100*best(c,3), best(c,2), zExag)});
     for i = 1:size(P{c}, 1)                             % 10 ms per frame = real time
         set(ball, 'XData', P{c}(i,1) + r*sxp, 'YData', -P{c}(i,2) + r*syp, 'ZData', P{c}(i,3) + r*szp/zExag);  % /zExag keeps it round
         drawnow; pause(0.01);

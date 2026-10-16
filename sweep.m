@@ -20,7 +20,7 @@ cupA_D = [0.15, 0.06];    % [center along x, opening width] on edge y=0 (A-D edg
 %% Launcher at D
 P0 = [L - 0.05, 0.05];    % exit point of the launcher, 5 cm in from corner D. Edit to match CAD
 h_list = 0.02:0.001:0.15;  % ramp drop height (m): 2-15 cm, 1 mm steps (scoring band is thin in height)
-th_list = 30:0.5:60;      % angle (deg): 0 = along D->A edge, 90 = into board toward C. 45 = diagonal, like the test shot that worked
+th_list = 0:0.5:90;       % angle (deg): 0 = along D->A edge, 90 = into board toward C. 45 = diagonal, like the test shot that worked
 
 [H, TH] = meshgrid(h_list, th_list);
 V = eta * sqrt(10/7 * g * H);              % rolling ball off a ramp of drop H
@@ -30,16 +30,18 @@ inD = hit == 2 & abs(exitPt(:,1) - cupA_D(1)) <= cupA_D(2)/2;
 
 %% Self-check: ball released at rest with no drag must roll toward A
 [~, e] = simulate([0.5 0.5], 0, 0, ag, 0, L, W);
-assert(e(1) < 0.5 && e(2) < 0.5, 'gravity sign wrong');
+assert(e(1) < 0.5 && e(2) < 0.5, 'gravity sign wrong / 重力の向きが逆');
 
 %% Observed-shot check: the photo's ramp (~6 cm drop, 45 deg) should arc out and land at A
 [~, e, p] = simulate(P0, eta*sqrt(10/7*g*0.06), 45, ag, c_r, L, W);
 fprintf('Check (6 cm drop, 45 deg): max %.0f cm into board, ends at x=%.0f y=%.0f cm. Tune c_r/eta to match reality\n', ...
         100*max(p(:,2)), 100*e(1), 100*e(2));
+fprintf('確認（落差6 cm・45°）：盤面に最大 %.0f cm 進入、終点 x=%.0f y=%.0f cm。実測に合うよう c_r/eta を調整\n', ...
+        100*max(p(:,2)), 100*e(1), 100*e(2));
 
 %% Report + plot
-fprintf('Cup on A-B edge: %d hits\n', nnz(inB));
-fprintf('Cup on A-D edge: %d hits\n', nnz(inD));
+fprintf('Cup on A-B edge: %d hits / A-B辺のカップ：%d 件成功\n', nnz(inB), nnz(inB));
+fprintf('Cup on A-D edge: %d hits / A-D辺のカップ：%d 件成功\n', nnz(inD), nnz(inD));
 % Pick per cup: aim at th_aim, ramp drop = middle of the scoring height window (max margin either way)
 th_aim = 45;   % deg, diagonal like the test shot that worked. Change to explore other aims
 best = zeros(2, 3);  masks = {inB, inD};      % [v, angle, h]
@@ -47,18 +49,42 @@ row = find(abs(th_list - th_aim) < 1e-9);
 for c = 1:2
     m = reshape(masks{c}, size(H));
     hs = H(row, m(row,:));
-    if isempty(hs), fprintf('Cup %d: no scoring ramp drop at %g deg\n', c, th_aim); continue; end
+    if isempty(hs), fprintf('Cup %d: no scoring ramp drop at %g deg / カップ%d：%g°では入るランプ落差なし\n', c, th_aim, c, th_aim); continue; end
     h = (min(hs) + max(hs)) / 2;
     best(c,:) = [eta*sqrt(10/7*g*h), th_aim, h];
     fprintf('Cup %d @ %g deg: ramp drop %.1f-%.1f cm scores -> use %.1f cm (v = %.2f m/s)\n', ...
             c, th_aim, 100*min(hs), 100*max(hs), 100*h, best(c,1));
+    fprintf('  カップ%d（%g°）：ランプ落差 %.1f～%.1f cm で成功 → %.1f cm を使用（v = %.2f m/s）\n', ...
+            c, th_aim, 100*min(hs), 100*max(hs), 100*h, best(c,1));
 end
+
+% Every angle: which ramp drop scores. Pick whatever angle your ramp/launcher ends up at
+th_show = 10:5:80;
+fan = {zeros(0, 3), zeros(0, 3)};            % per cup: [v, angle, h] of each scoring angle, drawn faint in board3d
+fprintf('\n angle | A-B cup drop (cm) | A-D cup drop (cm)\n');
+fprintf(' 角度  | A-Bカップ落差 (cm) | A-Dカップ落差 (cm)\n');
+for th = th_show
+    r = find(abs(th_list - th) < 1e-9);
+    cellTxt = {'      --       ', '      --       '};
+    for c = 1:2
+        m = reshape(masks{c}, size(H));
+        hs = H(r, m(r,:));
+        if isempty(hs), continue; end
+        h = (min(hs) + max(hs)) / 2;
+        fan{c}(end+1,:) = [eta*sqrt(10/7*g*h), th, h];
+        cellTxt{c} = sprintf('%4.1f (%.1f-%.1f)', 100*h, 100*min(hs), 100*max(hs));
+    end
+    fprintf('  %3d  |  %s  |  %s\n', th, cellTxt{1}, cellTxt{2});
+end
+fprintf('(use = middle of the scoring window; window in brackets)\n');
+fprintf('（使用値＝成功範囲の中央、括弧内は成功範囲）\n\n');
 
 figure; hold on;
 plot(TH(inB), 100*H(inB), 'r.', TH(inD), 100*H(inD), 'b.');
-xlabel('launch angle (deg): 0 = along D->A edge, 90 = into board'); ylabel('ramp drop (cm)');
-legend('cup on A-B edge', 'cup on A-D edge'); grid on;
-title(sprintf('Scoring launches from D  (c_r = %.2f, eta = %.2f)', c_r, eta));
+xlabel({'launch angle (deg): 0 = along D->A edge, 90 = into board', '発射角度（度）：0 = D→A辺に沿う、90 = 盤面の内側へ'});
+ylabel({'ramp drop (cm)', 'ランプ落差 (cm)'});
+legend('cup on A-B edge / A-B辺のカップ', 'cup on A-D edge / A-D辺のカップ'); grid on;
+title({sprintf('Scoring launches from D  (c_r = %.2f, eta = %.2f)', c_r, eta), 'Dからの成功する発射条件'});
 
 %% 3D board view: both setups, animated
 board3d
