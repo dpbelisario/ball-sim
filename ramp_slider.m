@@ -25,12 +25,24 @@ h.val = uicontrol(f, 'Style', 'text', 'Units', 'normalized', 'Position', [0.85 0
 uicontrol(f, 'Style', 'text', 'Units', 'normalized', 'Position', [0.02 0.005 0.96 0.10], 'BackgroundColor', 'w', ...
           'HorizontalAlignment', 'left', 'String', windowText(S));
 
-btn = @(x, str, fn) uicontrol(f, 'Style', 'pushbutton', 'Units', 'normalized', 'Position', [x 0.185 0.22 0.055], ...
-                               'String', str, 'Callback', fn);
-btn(0.02, 'Play / 再生',          @(~, ~) play(h, S, zB));
-btn(0.26, 'Stop / 停止',          @(~, ~) bump(f));
-btn(0.50, 'Aim A-B / 狙い A-B',   @(~, ~) goaim(h, S, zB, 1));
-btn(0.74, 'Aim A-D / 狙い A-D',   @(~, ~) goaim(h, S, zB, 2));
+btn = @(x, w, str, fn) uicontrol(f, 'Style', 'pushbutton', 'Units', 'normalized', 'Position', [x 0.185 w 0.055], ...
+                                  'String', str, 'Callback', fn);
+btn(0.02, 0.15, 'Play / 再生',          @(~, ~) play(h, S, zB));
+btn(0.18, 0.15, 'Stop / 停止',          @(~, ~) bump(f));
+btn(0.34, 0.19, 'Aim A-B / 狙い A-B',   @(~, ~) goaim(h, S, zB, 1));
+btn(0.54, 0.19, 'Aim A-D / 狙い A-D',   @(~, ~) goaim(h, S, zB, 2));
+btn(0.75, 0.11, '⟲ 15°',               @(~, ~) spin(ax, -15));     % turn the table counterclockwise (seen from above)
+btn(0.87, 0.11, '⟳ 15°',               @(~, ~) spin(ax, +15));     % clockwise
+
+% rotation: flat on the table only. Freeze axes size/limits so nothing rescales or jumps while turning,
+% and if the mouse rotate tool is used, snap the tilt back so it only turns around the vertical axis.
+axis(ax, 'vis3d');
+set(ax, 'XLimMode', 'manual', 'YLimMode', 'manual', 'ZLimMode', 'manual');
+[~, h.el] = view(ax);
+try
+    r3 = rotate3d(f);
+    set(r3, 'ActionPostCallback', @(~, ev) view(ev.Axes, getaz(ev.Axes), h.el));
+end
 
 cb = @(~, ~) redraw(h, S, zB);
 set(h.ang, 'Callback', cb);
@@ -39,6 +51,15 @@ try   % live update while dragging (MATLAB); Octave just updates on release
 end
 if ~isnan(S.best(2, 2)), set(h.ang, 'Value', S.best(2, 2)); end   % start on a scoring shot if there is one
 redraw(h, S, zB);
+end
+
+function spin(ax, d)   % turn the view around the vertical axis only, keep the tilt
+[az, el] = view(ax);
+view(ax, az + d, el);
+end
+
+function az = getaz(ax)
+[az, ~] = view(ax);
 end
 
 function s = windowText(S)   % "A-B cup: 21.1-24.9°, ...  |  A-D cup: ..." in both languages
