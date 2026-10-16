@@ -13,7 +13,8 @@ ag = -(5/7)*g*[sx, sy];                   % rolling solid sphere, downhill = tow
 % exit speed off the 5 cm blue ramp ~0.67 m/s (ideal 0.84 -> ramp keeps ~80%)
 c_r    = 0.22;  % ponytail: felt drag (m/s^2), +-0.03. More rolls tighten it
 G_meas = 0.31;  % ponytail: measured slope pull (m/s^2); replaces the corner-based 0.35, same direction
-v0     = 0.67;  % ponytail: ramp exit speed (m/s), +-0.05. Fixed ramp = this never changes. Re-measure if the ramp changes
+v0     = 0.73;  % ponytail: ramp exit speed (m/s). Video measured 0.67 +-0.05, but the 5 x 11.4 cm ramp does reach the
+                %   A-B cup from D in practice; 0.73 is the minimum that makes that possible in the model. Re-measure (filmed release)
 ag = ag * G_meas / norm(ag);
 
 %% Goals (cups sit just off the felt edge, beside corner A)
