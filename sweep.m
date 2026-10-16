@@ -89,3 +89,7 @@ title({sprintf('Scoring launches from D  (c_r = %.2f, eta = %.2f)', c_r, eta), '
 
 %% 3D board view: both setups, animated
 board3d
+
+%% Interactive: drag sliders to turn the ramp 0-90 deg and change its drop / スライダーでランプの向きと落差を操作
+S = struct('L', L, 'W', W, 'g', g, 'ag', ag, 'c_r', c_r, 'eta', eta, 'P0', P0, 'cupA_B', cupA_B, 'cupA_D', cupA_D);
+ramp_slider
