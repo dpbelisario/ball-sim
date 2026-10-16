@@ -9,6 +9,7 @@ zc = [1.3 5 7 3]/100; % felt surface height at corners A B C D (m above table)
 zBoard = @(x, y) zc(1)*(1-x/L).*(1-y/W) + zc(2)*(1-x/L).*(y/W) + zc(3)*(x/L).*(y/W) + zc(4)*(x/L).*(1-y/W);
 
 figure('Color', 'w'); hold on; grid on;
+set(gca, 'Position', [0.08 0.27 0.88 0.58]);   % room at the bottom for the ramp sliders
 try, theme(gcf, 'light'); end   % MATLAB dark mode greys out all text; force light (no-op on older MATLAB/Octave)
 daspect([1 1 1/zExag]); view(-10, 50);
 xlabel({'x (m), A -> D', 'x (m)、A→D'}); ylabel({'distance from A-D edge (m)', 'A-D辺からの距離 (m)'}); zlabel({'z (m)', '高さ (m)'});
@@ -47,7 +48,7 @@ plot3(P0(1), -P0(2), zBoard(P0(1), P0(2)) + 0.01, 'bs', 'MarkerSize', 12, 'Marke
 
 % paths: roll on felt, then fall off the edge into the cup
 [sxp, syp, szp] = sphere(16);
-ball = surf(r*sxp, r*syp, r*szp, 'FaceColor', [1 0.5 0], 'EdgeColor', 'none');
+ball = surf(r*sxp, r*syp, r*szp, 'FaceColor', [1 0.5 0], 'EdgeColor', 'none', 'Tag', 'ball');
 cols = 'rb';  names = {'cup on A-B edge', 'cup on A-D edge'};  namesJ = {'A-B辺のカップ', 'A-D辺のカップ'};
 P = cell(1, 2);
 fanCol = {[1 0.7 0.7], [0.7 0.7 1]};          % faint: every scoring angle from the sweep table
@@ -81,3 +82,7 @@ for c = 1:2
     end
     pause(1);
 end
+
+% sliders: turn the ramp 0-90 deg and change its drop; live path + ball redraw on this figure
+S.zc = zc;  S.r = r;  S.zExag = zExag;
+ramp_slider(gcf, S);
