@@ -10,7 +10,7 @@ toolboxes, no absolute paths, so the same files run on local MATLAB and on MATLA
 | `sweep.m` | Board geometry, launcher, parameter sweep, scoring plot. Calls `board3d` at the end. |
 | `simulate.m` | Vectorised rolling-ball integrator (gravity on the tilt + felt drag). |
 | `board3d.m` | Animated 3D view of the board, cups and the two best shots. |
-| `ramp_slider.m` | Adds two sliders under the 3D board (ramp angle 0-90 deg, drop 2-15 cm); path, ball and IN/MISS redraw live. Called by `board3d`; fresh board with sliders: `close all; board3d`. |
+| `ramp_slider.m` | Controls under the 3D board: sliders (ramp angle 0-90 deg, drop 2-15 cm) redraw path, ball and IN/MISS live; buttons Play, Stop, Best A-B, Best A-D. Called by `board3d`; fresh board: `close all; board3d`. |
 | `gitsync.m` | Optional helper: `gitsync` pulls, `gitsync('message')` commits and pushes. |
 
 ## Run it

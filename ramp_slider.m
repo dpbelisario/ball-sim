@@ -1,8 +1,9 @@
 function ramp_slider(f, S)
-% ramp_slider(f, S) — adds two sliders to the 3D board figure f (made by board3d):
-% ramp angle 0-90 deg and ramp drop 2-15 cm. The orange path, the ball and the IN/MISS title
-% redraw on every move. To get a fresh board with sliders: close all; board3d
-% ramp_slider — 3D表示にスライダーを追加：ランプ角度（0～90°）と落差。動かすたびに軌道・ボール・判定が更新される。
+% ramp_slider(f, S) — adds controls to the 3D board figure f (made by board3d):
+%   sliders: ramp angle 0-90 deg, ramp drop 2-15 cm -> path, ball and IN/MISS title redraw on every move
+%   buttons: Play (animate current shot), Stop, Best A-B / Best A-D (jump to the sweep's best setting and play)
+% Moving a slider or pressing any button stops a running animation. Fresh board: close all; board3d
+% ramp_slider — 3D表示に操作パネルを追加：スライダー（角度・落差）、再生／停止／最適設定ボタン。
 
 ax = findobj(f, 'Type', 'axes');  ax = ax(1);
 zB = @(x, y) bilin(S.zc, min(max(x, 0), S.L)/S.L, min(max(y, 0), S.W)/S.W);
@@ -21,6 +22,14 @@ h.ang  = uicontrol(f, 'Style', 'slider', 'Units', 'normalized', 'Position', [0.3
 h.drop = uicontrol(f, 'Style', 'slider', 'Units', 'normalized', 'Position', [0.36 0.04 0.60 0.05], ...
                    'Min', 2, 'Max', 15, 'Value', 6, 'SliderStep', [0.1 1]/13);
 
+h.fig = f;
+btn = @(x, str, fn) uicontrol(f, 'Style', 'pushbutton', 'Units', 'normalized', 'Position', [x 0.195 0.22 0.055], ...
+                               'String', str, 'Callback', fn);
+btn(0.02, 'Play / 再生',          @(~, ~) play(h, S, zB));
+btn(0.26, 'Stop / 停止',          @(~, ~) bump(f));
+btn(0.50, 'Best A-B / 最適 A-B',  @(~, ~) gobest(h, S, zB, 1));
+btn(0.74, 'Best A-D / 最適 A-D',  @(~, ~) gobest(h, S, zB, 2));
+
 cb = @(~, ~) redraw(h, S, zB);
 set([h.ang h.drop], 'Callback', cb);
 try   % live update while dragging (MATLAB); Octave just updates on release
@@ -30,11 +39,38 @@ end
 redraw(h, S, zB);
 end
 
+function id = bump(f)   % new run id: any animation still looping sees the change and stops
+id = getappdata(f, 'run');  if isempty(id), id = 0; end
+id = id + 1;  setappdata(f, 'run', id);
+end
+
+function gobest(h, S, zB, c)
+if S.best(c, 3) == 0, return; end   % no scoring drop found for that cup at th_aim
+set(h.ang, 'Value', S.best(c, 2));  set(h.drop, 'Value', 100*S.best(c, 3));
+play(h, S, zB);
+end
+
+function play(h, S, zB)
+[p, z] = redraw(h, S, zB);
+if isempty(h.ball), return; end
+n = size(p, 1);
+k = [1:5:n, n];                                   % every 5th point = 50 ms frames, real time
+fall = linspace(z(end), S.r, 6)';                 % ball drops to the table if it left the board
+id = bump(h.fig);
+for i = [k, -(1:numel(fall))]
+    if ~ishandle(h.fig) || getappdata(h.fig, 'run') ~= id, return; end   % stopped, slider moved, or closed
+    if i > 0, x = p(i,1); y = p(i,2); zz = z(i); else, x = p(n,1); y = p(n,2); zz = fall(-i); end
+    set(h.ball, 'XData', x + S.r*h.sx, 'YData', -y + S.r*h.sy, 'ZData', zz + S.r*h.sz/S.zExag);
+    drawnow; pause(0.05);
+end
+end
+
 function z = bilin(zc, u, w)   % felt height from corner heights A B C D, u along A->D, w along A->B
 z = zc(1)*(1-u).*(1-w) + zc(2)*(1-u).*w + zc(3)*u.*w + zc(4)*u.*(1-w);
 end
 
-function redraw(h, S, zB)
+function [p, z] = redraw(h, S, zB)
+bump(h.fig);                                      % stop any running animation
 th = round(get(h.ang, 'Value') * 2) / 2;          % 0.5 deg steps
 hd = round(get(h.drop, 'Value') * 10) / 10;       % 1 mm steps
 v = S.eta * sqrt(10/7 * S.g * hd/100);
