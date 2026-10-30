@@ -10,30 +10,26 @@ L = 1.145;  W = 0.805;  g = 9.81;
 % over 3.6 s. A speed-dependent drag fitted no better, so drag stays one constant.
 c_r = 0.34;                               % felt drag (m/s^2)
 ag  = -0.38 * [cosd(61), sind(61)];       % slope pull (m/s^2) toward A, 61 deg from the A-D edge (corner heights predicted 0.35 at 71 deg)
-% Ramp exit speed from physics (5 x 11.4 cm triangle ramp, 4 cm rail gap, 1 cm rails, golf ball r = 21.35 mm):
-%  - ball fits between the rails: resting on the floor its half-width at rail height is 18.1 mm < 20 mm gap/2,
-%    so it rolls on the channel floor with its full radius (rails only guide) -> no extra spin penalty
-%  - rolling without slipping, no losses: v = sqrt(10/7 g h)                       = 0.84 m/s
-%  - sharp ramp -> felt corner (23.7 deg) costs: v' = v (5 cos(theta) + 2) / 7     -> 0.79 m/s
-%  (the blue test ramp in ball_video.mp4 measured ~0.76 m/s just after leaving it: consistent)
-r_ball = 0.02135;  h_ramp = 0.05;  len_ramp = 0.114;  gap = 0.04;  rail = 0.01;  % h_ramp = slope surface at the top (rails not included)
+% Chute exit speed from physics, geometry measured from the team's STL export (発射台ver3 + ゴルフボール, 2026-10-30):
+%  - chute floor slopes 23.9 deg, 114 mm long; rails 4 mm tall, 40 mm apart -> ball rolls on the floor (not the rails)
+%  - at release the ball rests against the backstop: its CENTRE is 59.2 mm above the felt; on the felt it is r above
+%  - rolling without slipping: v = sqrt(10/7 g drop); sharp chute -> felt corner costs v' = v (5 cos(theta) + 2) / 7
+r_ball = 0.02135;  h_release = 0.0592;  th_ramp = 23.9 * pi/180;  gap = 0.040;  rail = 0.004;
 assert(sqrt(r_ball^2 - (r_ball - rail)^2) < gap/2, 'ball rides on the rails, not the floor: use rolling radius sqrt(r^2-(gap/2)^2)');
-th_ramp = atan(h_ramp / len_ramp);
-drop = h_ramp - r_ball*(1 - cos(th_ramp));               % ball CENTRE drop: on the slope the centre sits r*cos(theta) above the contact point
-v0 = sqrt(10/7 * g * drop) * (5*cos(th_ramp) + 2) / 7;   % ponytail: ideal physics; a filmed release would confirm it
+drop = h_release - r_ball;                                % ball centre drop: 3.8 cm (the backstop keeps it off the very top)
+v0 = sqrt(10/7 * g * drop) * (5*cos(th_ramp) + 2) / 7;   % ponytail: ideal physics (0.68 m/s); a filmed release would confirm it
 
 %% Goals (cups sit just off the felt edge, beside corner A)
-cupA_B = [0.15, 0.06];    % [center along y, opening width] on edge x=0 (A-B edge)
-cupA_D = [0.15, 0.06];    % [center along x, opening width] on edge y=0 (A-D edge)
-% 18 cm from A to the cup's far side, 6 cm wide cup -> center at 15 cm
+cupA_B = [0.1364, 0.050]; % [centre along y, inner opening] on edge x=0 (A-B edge)   } from the goal STL (ゴール):
+cupA_D = [0.1370, 0.050]; % [centre along x, inner opening] on edge y=0 (A-D edge)   } 5 mm walls, 50 mm inside
 
 %% Launcher (CAD 発射台ver2 + 発射台固定台): the same 5 x 11.4 cm chute, now on a quarter-circle base in corner D.
 % The chute turns about the corner, so the point where the ball meets the felt moves along an arc as the angle changes.
 pivot  = [L, 0];          % corner D = centre of the quarter-circle base
-r_exit = 0.227;           % ponytail: chute tip (ball meets the felt) 22.7 cm from the corner, scaled off the CAD photos -> measure in SolidWorks
-r_back = 0.108;           % chute back wall, from the corner (drawing only, CAD photos)
-r_base = [0.146, 0.200];  % base: raised inner disk / outer ring radius (drawing only, CAD photos)
-h_base = [0.030, 0.009];  % base heights: inner disk / ring (drawing only, CAD photos)
+r_exit = 0.225;           % chute floor meets the felt 225 mm from the corner (STL)
+r_back = 0.112;           % chute back, from the corner (drawing only, STL)
+r_base = [0.150, 0.200];  % base: raised inner disk / outer ring radius (drawing only, STL)
+h_base = [0.030, 0.010];  % base heights: inner disk / ring (drawing only, STL). Peg on the ring at r = 180 mm locks the chute angle
 P0at = @(th) pivot + r_exit * [-cosd(th(:)), sind(th(:))];   % exit point for each angle (deg), one row per angle
 th_list = 0:0.1:90;       % angle (deg): 0 = chute along the D->A edge toward A, 90 = along the D-C edge
 
