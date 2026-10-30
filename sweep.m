@@ -1,41 +1,44 @@
-% sweep.m — fixed ramp (one exit speed), vary only the launch angle from corner D:
+% sweep.m — fixed chute (one exit speed) turning about corner D, vary only the launch angle:
 % which angles land in each goal cup at corner A. Then opens the 3D board with an angle slider.
 % Frame: origin A (low corner), x along A->D, y along A->B. Units: m, s. Runs in MATLAB or Octave, no toolboxes.
 
 %% Board
 L = 1.145;  W = 0.805;  g = 9.81;
-sx = mean([3-1.3, 7-5]) / 114.5;          % rise along x (A->D), from corner heights A 1.3, B 5, C 7, D 3 cm
-sy = mean([5-1.3, 7-3]) / 80.5;           % rise along y (A->B)
-ag = -(5/7)*g*[sx, sy];                   % rolling solid sphere, downhill = toward A (direction from the corners)
 
-%% Measured from the overhead roll video (PXL_20261016_063356301), tape-measure scale:
-% felt drag 0.21-0.22, slope pull 0.30-0.32 m/s^2 (corners predict 0.35: board is flatter mid-board),
-% exit speed off the 5 cm blue ramp ~0.67 m/s (ideal 0.84 -> ramp keeps ~80%)
-c_r    = 0.22;  % ponytail: felt drag (m/s^2), +-0.03. More rolls tighten it
-G_meas = 0.31;  % ponytail: measured slope pull (m/s^2); replaces the corner-based 0.35, same direction
+%% Felt + slope, measured from the overhead full-board video (ball_video.mp4, 2026-10-30, scale from the board edges).
+% Re-simulating that whole shot with these two numbers lands within 0.6 cm on average (1.8 cm max) of the real ball
+% over 3.6 s. A speed-dependent drag fitted no better, so drag stays one constant.
+c_r = 0.34;                               % felt drag (m/s^2)
+ag  = -0.38 * [cosd(61), sind(61)];       % slope pull (m/s^2) toward A, 61 deg from the A-D edge (corner heights predicted 0.35 at 71 deg)
 % Ramp exit speed from physics (5 x 11.4 cm triangle ramp, 4 cm rail gap, 1 cm rails, golf ball r = 21.35 mm):
 %  - ball fits between the rails: resting on the floor its half-width at rail height is 18.1 mm < 20 mm gap/2,
 %    so it rolls on the channel floor with its full radius (rails only guide) -> no extra spin penalty
 %  - rolling without slipping, no losses: v = sqrt(10/7 g h)                       = 0.84 m/s
 %  - sharp ramp -> felt corner (23.7 deg) costs: v' = v (5 cos(theta) + 2) / 7     -> 0.79 m/s
-%  (video measured 0.67 +-0.05; real shots reaching the A-B cup need >= 0.73, consistent with ~0.79)
+%  (the blue test ramp in ball_video.mp4 measured ~0.76 m/s just after leaving it: consistent)
 r_ball = 0.02135;  h_ramp = 0.05;  len_ramp = 0.114;  gap = 0.04;  rail = 0.01;  % h_ramp = slope surface at the top (rails not included)
 assert(sqrt(r_ball^2 - (r_ball - rail)^2) < gap/2, 'ball rides on the rails, not the floor: use rolling radius sqrt(r^2-(gap/2)^2)');
 th_ramp = atan(h_ramp / len_ramp);
 drop = h_ramp - r_ball*(1 - cos(th_ramp));               % ball CENTRE drop: on the slope the centre sits r*cos(theta) above the contact point
 v0 = sqrt(10/7 * g * drop) * (5*cos(th_ramp) + 2) / 7;   % ponytail: ideal physics; a filmed release would confirm it
-ag = ag * G_meas / norm(ag);
 
 %% Goals (cups sit just off the felt edge, beside corner A)
 cupA_B = [0.15, 0.06];    % [center along y, opening width] on edge x=0 (A-B edge)
 cupA_D = [0.15, 0.06];    % [center along x, opening width] on edge y=0 (A-D edge)
 % 18 cm from A to the cup's far side, 6 cm wide cup -> center at 15 cm
 
-%% Launcher at D
-P0 = [L - 0.05, 0.05];    % exit point of the launcher, 5 cm in from corner D. Edit to match CAD
-th_list = 0:0.1:90;       % angle (deg): 0 = along D->A edge toward A, 90 = straight into the board
+%% Launcher (CAD 発射台ver2 + 発射台固定台): the same 5 x 11.4 cm chute, now on a quarter-circle base in corner D.
+% The chute turns about the corner, so the point where the ball meets the felt moves along an arc as the angle changes.
+pivot  = [L, 0];          % corner D = centre of the quarter-circle base
+r_exit = 0.227;           % ponytail: chute tip (ball meets the felt) 22.7 cm from the corner, scaled off the CAD photos -> measure in SolidWorks
+r_back = 0.108;           % chute back wall, from the corner (drawing only, CAD photos)
+r_base = [0.146, 0.200];  % base: raised inner disk / outer ring radius (drawing only, CAD photos)
+h_base = [0.030, 0.009];  % base heights: inner disk / ring (drawing only, CAD photos)
+P0at = @(th) pivot + r_exit * [-cosd(th(:)), sind(th(:))];   % exit point for each angle (deg), one row per angle
+th_list = 0:0.1:90;       % angle (deg): 0 = chute along the D->A edge toward A, 90 = along the D-C edge
 
-S = struct('L', L, 'W', W, 'g', g, 'ag', ag, 'c_r', c_r, 'v0', v0, 'P0', P0, 'cupA_B', cupA_B, 'cupA_D', cupA_D);
+S = struct('L', L, 'W', W, 'g', g, 'ag', ag, 'c_r', c_r, 'v0', v0, 'P0at', P0at, 'pivot', pivot, 'r_exit', r_exit, ...
+           'r_back', r_back, 'r_base', r_base, 'h_base', h_base, 'cupA_B', cupA_B, 'cupA_D', cupA_D);
 [win, hit, exitPt] = scoring_windows(S, th_list);
 
 %% Self-check: ball released at rest with no drag must roll toward A
@@ -44,8 +47,8 @@ assert(e(1) < 0.5 && e(2) < 0.5, 'gravity sign wrong / 重力の向きが逆');
 
 %% Report: aim windows per cup / 各カップの成功角度範囲
 names = {'A-B edge cup', 'A-D edge cup'};  namesJ = {'A-B辺のカップ', 'A-D辺のカップ'};
-fprintf('\nExit speed %.2f m/s, felt drag %.2f, slope pull %.2f m/s^2\n', v0, c_r, G_meas);
-fprintf('出口速度 %.2f m/s、フェルト抵抗 %.2f、傾斜の加速度 %.2f m/s^2\n\n', v0, c_r, G_meas);
+fprintf('\nExit speed %.2f m/s, felt drag %.2f, slope pull %.2f m/s^2, chute tip %.1f cm from corner D\n', v0, c_r, norm(ag), 100*r_exit);
+fprintf('出口速度 %.2f m/s、フェルト抵抗 %.2f、傾斜の加速度 %.2f m/s^2、シュート先端はD角から %.1f cm\n\n', v0, c_r, norm(ag), 100*r_exit);
 best = nan(2, 2);  fan = {zeros(0, 2), zeros(0, 2)};      % [v, angle]
 for c = 1:2
     w = win{c};

@@ -1,5 +1,5 @@
 % board3d.m — 3D view of the tilted board, cups and both best shots. Called at the end of sweep.m
-% (uses its workspace: L, W, P0, best, cupA_B, cupA_D, ag, c_r, g). Plain MATLAB graphics, no toolboxes.
+% (uses its workspace: L, W, S, P0at, best, fan, cupA_B, cupA_D, ag, c_r, g). Plain MATLAB graphics, no toolboxes.
 % View matches the table photo: A (goal) back-left, D (blue launcher) back-right, B front-left, C front-right.
 % The sim frame (y = A->B) is mirrored vs. that view, so everything is drawn at -y.
 
@@ -43,8 +43,12 @@ for c = 1:2
     surf([ux; ux], -[uy; uy], [zeros(size(ux)); cupH*ones(size(ux))], 'FaceColor', [0.15 0.15 0.15], 'FaceAlpha', 0.7, 'EdgeColor', 'none');
 end
 
-% launcher: blue marker sitting on the felt at its exit point
-plot3(P0(1), -P0(2), zBoard(P0(1), P0(2)) + 0.01, 'bs', 'MarkerSize', 12, 'MarkerFaceColor', 'b');
+% launcher base: quarter circle in corner D, raised inner disk + lower outer ring (the chute itself is drawn by ramp_slider)
+ta = linspace(0, 90, 30)';
+arc = @(r) S.pivot + r * [-cosd(ta), sind(ta)];
+inner = [S.pivot; arc(S.r_base(1))];  ring = [arc(S.r_base(2)); flipud(arc(S.r_base(1)))];
+fill3(ring(:,1),  -ring(:,2),  zBoard(ring(:,1),  ring(:,2))  + S.h_base(2), [0.55 0.6 0.75]);
+fill3(inner(:,1), -inner(:,2), zBoard(inner(:,1), inner(:,2)) + S.h_base(1), [0.45 0.5 0.7]);
 
 % paths: roll on felt, then fall off the edge into the cup
 [sxp, syp, szp] = sphere(16);
@@ -54,13 +58,13 @@ P = cell(1, 2);
 fanCol = {[1 0.7 0.7], [0.7 0.7 1]};          % faint: every scoring angle from the sweep table
 for c = 1:2
     for j = 1:size(fan{c}, 1)
-        [~, ~, p] = simulate(P0, fan{c}(j,1), fan{c}(j,2), ag, c_r, L, W);
+        [~, ~, p] = simulate(P0at(fan{c}(j,2)), fan{c}(j,1), fan{c}(j,2), ag, c_r, L, W);
         plot3(p(:,1), -p(:,2), zBoard(min(max(p(:,1), 0), L), min(max(p(:,2), 0), W)) + r, '-', 'Color', fanCol{c});
     end
 end
 for c = 1:2
     if isnan(best(c,2)), continue; end                 % no scoring angle for this cup
-    [~, ~, p] = simulate(P0, best(c,1), best(c,2), ag, c_r, L, W);
+    [~, ~, p] = simulate(P0at(best(c,2)), best(c,1), best(c,2), ag, c_r, L, W);
     z = zBoard(min(max(p(:,1), 0), L), min(max(p(:,2), 0), W)) + r;
     vel = (p(end,:) - p(end-1,:)) / 0.01;               % path is sampled every 10 ms
     tf = (0:0.01:sqrt(2*z(end)/g))';                    % free fall from edge height to table

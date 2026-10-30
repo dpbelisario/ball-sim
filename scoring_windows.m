@@ -3,7 +3,7 @@ function [win, hit, e] = scoring_windows(S, th)
 % win{1} / win{2}: angle windows [from to] (one row per window) that land in the A-B / A-D edge cup.
 % hit, e: simulate.m outputs per angle (which edge it left by, and where).
 th = th(:);
-[hit, e] = simulate(S.P0, S.v0 * ones(size(th)), th, S.ag, S.c_r, S.L, S.W);
+[hit, e] = simulate(S.P0at(th), S.v0 * ones(size(th)), th, S.ag, S.c_r, S.L, S.W);   % exit point moves with the angle
 in = {hit == 1 & abs(e(:,2) - S.cupA_B(1)) <= S.cupA_B(2)/2, ...
       hit == 2 & abs(e(:,1) - S.cupA_D(1)) <= S.cupA_D(2)/2};
 win = cell(1, 2);

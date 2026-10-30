@@ -11,7 +11,7 @@ ax = findobj(f, 'Type', 'axes');  ax = ax(1);
 zB = @(x, y) bilin(S.zc, min(max(x, 0), S.L)/S.L, min(max(y, 0), S.W)/S.W);
 [h.sx, h.sy, h.sz] = sphere(16);
 h.path  = plot3(ax, NaN, NaN, NaN, '-', 'LineWidth', 3, 'Color', [1 0.5 0]);
-h.aim   = plot3(ax, NaN, NaN, NaN, 'b-', 'LineWidth', 4);
+h.chute = fill3(ax, NaN(4,1), NaN(4,1), NaN(4,1), [0.15 0.3 0.85]);   % the turning chute, redrawn at each angle
 h.ball  = findobj(f, 'Tag', 'ball');
 h.title = get(ax, 'Title');
 h.fig   = f;
@@ -108,11 +108,13 @@ function [p, z] = redraw(h, S, zB)
 bump(h.fig);                                      % stop any running animation
 th = round(get(h.ang, 'Value') * 10) / 10;        % 0.1 deg steps
 set(h.val, 'String', sprintf('%.1f°', th));
-[hit, e, p] = simulate(S.P0, S.v0, th, S.ag, S.c_r, S.L, S.W);
+[hit, e, p] = simulate(S.P0at(th), S.v0, th, S.ag, S.c_r, S.L, S.W);
 z = zB(p(:,1), p(:,2)) + S.r;                     % drawn mirrored (-y), same as board3d
 set(h.path, 'XData', p(:,1), 'YData', -p(:,2), 'ZData', z);
-u = 0.12 * [-cosd(th), sind(th)];                 % ramp direction
-set(h.aim, 'XData', S.P0(1) + [0 u(1)], 'YData', -(S.P0(2) + [0 u(2)]), 'ZData', zB(S.P0(1), S.P0(2)) + 0.01 + [0 0]);
+d = [-cosd(th), sind(th)];  nrm = [d(2), -d(1)] * 0.03;   % chute axis and half-width (4 cm gap + rails)
+c4 = [S.pivot + S.r_back*d + nrm; S.pivot + S.r_exit*d + nrm; S.pivot + S.r_exit*d - nrm; S.pivot + S.r_back*d - nrm];
+zc4 = zB(c4(:,1), c4(:,2)) + [S.h_base(1) + 0.022; 0.004; 0.004; S.h_base(1) + 0.022];   % ~5 cm high at the back, on the felt at the tip
+set(h.chute, 'XData', c4(:,1), 'YData', -c4(:,2), 'ZData', zc4);
 if ~isempty(h.ball)
     set(h.ball, 'XData', e(1) + S.r*h.sx, 'YData', -e(2) + S.r*h.sy, 'ZData', z(end) + S.r*h.sz/S.zExag);
 end

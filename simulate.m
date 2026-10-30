@@ -2,9 +2,9 @@ function [hit, exitPt, path] = simulate(P0, v, thDeg, ag, c_r, L, W)
 % Vectorised over all launches. path = positions of launch #1 (for plotting). hit: 0 = stopped/left elsewhere, 1 = off x=0 edge, 2 = off y=0 edge.
 n = numel(v);  dt = 1e-3;
 th = thDeg(:) * pi/180;
-p = repmat(P0, n, 1);
+if size(P0, 1) == 1, p = repmat(P0, n, 1); else, p = P0; end   % one start point for all, or one per launch
 u = [-v(:).*cos(th), v(:).*sin(th)];   % angle 0 = straight along D->A (-x), + = into board (+y)
-live = true(n, 1);  path = P0;  hit = zeros(n, 1);  exitPt = nan(n, 2);
+live = true(n, 1);  path = P0(1,:);  hit = zeros(n, 1);  exitPt = nan(n, 2);
 for step = 1:20000                        % 20 s max
     u(live,:) = u(live,:) + ag*dt;
     s = sqrt(sum(u.^2, 2));
