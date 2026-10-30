@@ -87,7 +87,7 @@ a1 = along;  a1(hit ~= 1) = NaN;  a2 = along;  a2(hit ~= 2) = NaN;   % NaN gaps 
 h1 = plot(th_list, 100*a1, 'r.');  h2 = plot(th_list, 100*a2, 'b.');
 xlabel({'launch angle (deg): 0 = along D->A edge, 90 = into board', '発射角度（度）：0 = D→A辺に沿う、90 = 盤面の内側へ'});
 ylabel({'where it leaves the board: distance from A (cm)', '盤面から落ちる位置：Aからの距離 (cm)'});
-legend([hf h1 h2], 'cup opening (12-18 cm) / カップの開口部', 'leaves by A-B edge / A-B辺から落下', 'leaves by A-D edge / A-D辺から落下');
+legend([hf h1 h2], sprintf('cup opening (%.1f-%.1f cm) / カップの開口部', 100*(cupA_B(1) + [-1 1]*cupA_B(2)/2)), 'leaves by A-B edge / A-B辺から落下', 'leaves by A-D edge / A-D辺から落下');
 title({sprintf('Aim chart from D  (v0 = %.2f m/s, drag = %.2f)', v0, c_r), 'Dからの狙い角度チャート：緑の帯に入れば成功'});
 xlim([0 90]); ylim([0 100]);
 

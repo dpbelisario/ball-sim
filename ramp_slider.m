@@ -127,8 +127,9 @@ elseif hit == 0
 else
     edgeName = {'A-B', 'A-D'};
     along = e(3 - hit);                           % position along the edge it crossed, measured from A
-    res = sprintf('MISS: off the %s edge %.0f cm from A (cup = 12-18 cm) / 失敗：%s辺、Aから %.0f cm で落下', ...
-                  edgeName{hit}, 100*along, edgeName{hit}, 100*along);  col = [0.4 0.4 0.4];
+    cup = {S.cupA_B, S.cupA_D};  cr = 100*(cup{hit}(1) + [-1 1]*cup{hit}(2)/2);
+    res = sprintf('MISS: off the %s edge %.0f cm from A (cup = %.1f-%.1f cm) / 失敗：%s辺、Aから %.0f cm で落下', ...
+                  edgeName{hit}, 100*along, cr(1), cr(2), edgeName{hit}, 100*along);  col = [0.4 0.4 0.4];
 end
 set(h.title, 'String', {sprintf('Angle / 角度 %.1f°   (exit speed / 出口速度 %.2f m/s)', th, S.v0), res}, 'Color', col);
 end
