@@ -32,9 +32,10 @@ r_base = [0.150, 0.200];  % base: raised inner disk / outer ring radius (drawing
 h_base = [0.030, 0.010];  % base heights: inner disk / ring (drawing only, STL). Peg on the ring at r = 180 mm locks the chute angle
 P0at = @(th) pivot + r_exit * [-cosd(th(:)), sind(th(:))];   % exit point for each angle (deg), one row per angle
 th_list = 0:0.1:90;       % angle (deg): 0 = chute along the D->A edge toward A, 90 = along the D-C edge
+th_design = 28;           % angle the peg locks the chute at in the STL assembly; the 3D board opens here
 
 S = struct('L', L, 'W', W, 'g', g, 'ag', ag, 'c_r', c_r, 'v0', v0, 'P0at', P0at, 'pivot', pivot, 'r_exit', r_exit, ...
-           'r_back', r_back, 'r_base', r_base, 'h_base', h_base, 'cupA_B', cupA_B, 'cupA_D', cupA_D);
+           'r_back', r_back, 'r_base', r_base, 'h_base', h_base, 'cupA_B', cupA_B, 'cupA_D', cupA_D, 'th_design', th_design);
 [win, hit, exitPt] = scoring_windows(S, th_list);
 
 %% Self-check: ball released at rest with no drag must roll toward A

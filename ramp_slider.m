@@ -49,7 +49,7 @@ set(h.ang, 'Callback', cb);
 try   % live update while dragging (MATLAB); Octave just updates on release
     addlistener(h.ang, 'ContinuousValueChange', cb);
 end
-if ~isnan(S.best(2, 2)), set(h.ang, 'Value', S.best(2, 2)); end   % start on a scoring shot if there is one
+set(h.ang, 'Value', S.th_design);   % open at the design's angle (STL peg position)
 redraw(h, S, zB);
 end
 
